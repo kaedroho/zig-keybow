@@ -121,6 +121,25 @@ const pin_config = rp2xxx.pins.GlobalConfiguration{
 const pins = pin_config.pins();
 const i2c0 = i2c.instance.num(0);
 
+const SWITCHES: [16]@TypeOf(pins.sw0) = .{
+    pins.sw0,
+    pins.sw1,
+    pins.sw2,
+    pins.sw3,
+    pins.sw4,
+    pins.sw5,
+    pins.sw6,
+    pins.sw7,
+    pins.sw8,
+    pins.sw9,
+    pins.sw10,
+    pins.sw11,
+    pins.sw12,
+    pins.sw13,
+    pins.sw14,
+    pins.sw15,
+};
+
 // Switches are pulled up so they are 0 when pressed and 1 when released
 const SWITCH_PRESSED: u1 = 0;
 const SWITCH_RELEASED: u1 = 1;
@@ -255,71 +274,13 @@ pub fn main() !void {
     try led_driver_init(&led_buffer);
 
     while (true) {
-        // Disable all outputs
+        // Switch all LEDs
         @memset(led_buffer[0..0x24], 0x00);
 
-        if (pins.sw0.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 0, .Red, true);
-        }
-
-        if (pins.sw1.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 1, .Red, true);
-        }
-
-        if (pins.sw2.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 2, .Red, true);
-        }
-
-        if (pins.sw3.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 3, .Red, true);
-        }
-
-        if (pins.sw4.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 4, .Red, true);
-        }
-
-        if (pins.sw5.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 5, .Red, true);
-        }
-
-        if (pins.sw6.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 6, .Red, true);
-        }
-
-        if (pins.sw7.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 7, .Red, true);
-        }
-
-        if (pins.sw8.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 8, .Red, true);
-        }
-
-        if (pins.sw9.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 9, .Red, true);
-        }
-
-        if (pins.sw10.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 10, .Red, true);
-        }
-
-        if (pins.sw11.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 11, .Red, true);
-        }
-
-        if (pins.sw12.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 12, .Red, true);
-        }
-
-        if (pins.sw13.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 13, .Red, true);
-        }
-
-        if (pins.sw14.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 14, .Red, true);
-        }
-
-        if (pins.sw15.read() == SWITCH_PRESSED) {
-            set_led_state(&led_buffer, 15, .Red, true);
+        inline for (SWITCHES, 0..) |sw, idx| {
+            if (sw.read() == SWITCH_PRESSED) {
+                set_led_state(&led_buffer, idx, .Red, true);
+            }
         }
 
         try led_driver_update(0, &led_buffer);
