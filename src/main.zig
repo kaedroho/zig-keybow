@@ -253,13 +253,31 @@ const Colour = enum {
     Blue,
 };
 
-pub fn set_led_state(buffer: *Buffer, switch_number: u8, colour: Colour, state: bool) void {
+pub fn set_led(buffer: *Buffer, switch_number: u8, colour: Colour, brightness: u8) void {
     const colour_number: u8 = if (colour == .Red) 0 else if (colour == .Green) 1 else 2;
 
-    if (state) {
-        buffer[LED_MAP[colour_number][switch_number][0]] |= LED_MAP[colour_number][switch_number][1];
+    // Find location of the LED in the enable buffer
+    const byte = LED_MAP[colour_number][switch_number][0];
+    const bit = LED_MAP[colour_number][switch_number][1];
+
+    // Disable the LED is brightness is zero
+    if (brightness > 0) {
+        buffer[byte] |= bit;
+
+        // Find location of the LED in the brightness buffer
+        var brightness_byte = (byte - 1) * 8 + 0x24;
+        if (bit == 0x01) {
+            brightness_byte += 1;
+        } else if (bit == 0x02) {
+            brightness_byte += 2;
+        } else if (bit == 0x04) {
+            brightness_byte += 3;
+        } else if (bit == 0x08) {
+            brightness_byte += 4;
+        }
+        buffer[brightness_byte] = brightness;
     } else {
-        buffer[LED_MAP[colour_number][switch_number][0]] &= ~LED_MAP[colour_number][switch_number][1];
+        buffer[byte] &= ~bit;
     }
 }
 
@@ -268,18 +286,14 @@ pub fn main() !void {
 
     var led_buffer: Buffer = std.mem.zeroes(Buffer);
 
-    // Set all PWMs to max
-    @memset(std.mem.asBytes(led_buffer[0x24..]), 0xff);
-
     try led_driver_init(&led_buffer);
 
     while (true) {
-        // Switch all LEDs
-        @memset(led_buffer[0..0x24], 0x00);
-
         inline for (SWITCHES, 0..) |sw, idx| {
             if (sw.read() == SWITCH_PRESSED) {
-                set_led_state(&led_buffer, idx, .Red, true);
+                set_led(&led_buffer, idx, .Blue, 0xff);
+            } else {
+                set_led(&led_buffer, idx, .Blue, 0x10);
             }
         }
 
